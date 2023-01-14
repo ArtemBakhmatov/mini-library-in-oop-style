@@ -2042,33 +2042,41 @@ function () {
 
     this.btnBlock = document.createElement('div');
     this.colorPicker = document.createElement('input');
+    this.clear = document.createElement('div');
+    this.scale = localStorage.getItem('scale') || 1;
+    this.color = localStorage.getItem('color') || '#ffffff';
     this.btnBlock.addEventListener('click', function (event) {
       return _this.onScaleChange(event);
     });
     this.colorPicker.addEventListener('input', function (event) {
       return _this.onColorChange(event);
     });
+    this.clear.addEventListener('click', function () {
+      return _this.reset();
+    });
   }
 
   _createClass(Customizator, [{
     key: "onScaleChange",
     value: function onScaleChange(event) {
-      var scale;
+      var _this2 = this;
+
       var body = document.querySelector('body');
 
-      if (event.target.value) {
-        scale = +event.target.value.replace(/x/g, ''); // x -> заменяем на пустую строку
+      if (event) {
+        this.scale = +event.target.value.replace(/x/g, ''); // x -> заменяем на пустую строку
       }
 
-      function recursy(element) {
+      var recursy = function recursy(element) {
+        // фу-ю прописали из-за this.scale на 23 и 26 строке
         element.childNodes.forEach(function (node) {
           if (node.nodeName === '#text' && node.nodeValue.replace(/\s+/g, '').length > 0) {
             if (!node.parentNode.getAttribute('data-fz')) {
               var value = window.getComputedStyle(node.parentNode, null).fontSize;
               node.parentNode.setAttribute('data-fz', +value.replace(/px/g, ''));
-              node.parentNode.style.fontSize = node.parentNode.getAttribute('data-fz') * scale + 'px'; // +value.replace(/px/g, '') -> 50px получиться 50 и он будет числовым типом данных
+              node.parentNode.style.fontSize = node.parentNode.getAttribute('data-fz') * _this2.scale + 'px'; // +value.replace(/px/g, '') -> 50px получиться 50 и он будет числовым типом данных
             } else {
-              node.parentNode.style.fontSize = node.parentNode.getAttribute('data-fz') * scale + 'px';
+              node.parentNode.style.fontSize = node.parentNode.getAttribute('data-fz') * _this2.scale + 'px';
             }
           } else {
             recursy(node);
@@ -2078,24 +2086,53 @@ function () {
           // parentNode -> родитель текущего элемента
 
         }); // element.childNodes -> все дочерние элементы, которые он содержит
-      }
+      };
 
       recursy(body);
+      localStorage.setItem('scale', this.scale);
     }
   }, {
     key: "onColorChange",
     value: function onColorChange(event) {
       var body = document.querySelector('body');
       body.style.backgroundColor = event.target.value;
-      console.log(event.target.value);
+      localStorage.setItem('color', event.target.value);
+    }
+  }, {
+    key: "setBgColor",
+    value: function setBgColor() {
+      var body = document.querySelector('body');
+      body.style.backgroundColor = this.color;
+      this.colorPicker.value = this.color;
+    }
+  }, {
+    key: "injectStyle",
+    value: function injectStyle() {
+      var style = document.createElement('style');
+      style.innerHTML = "\n            .panel {\n                display: flex;\n                justify-content: space-around;\n                align-items: center;\n                position: fixed;\n                top: 10px;\n                right: 0;\n                border: 1px solid rgba(0,0,0, .2);\n                box-shadow: 0 0 20px rgba(0,0,0, .5);\n                width: 300px;\n                height: 60px;\n                background-color: #fff;\n            }\n            \n            .scale {\n                display: flex;\n                justify-content: space-around;\n                align-items: center;\n                width: 100px;\n                height: 40px;\n            }\n            .scale_btn {\n                display: block;\n                width: 40px;\n                height: 40px;\n                border: 1px solid rgba(0,0,0, .2);\n                border-radius: 4px;\n                font-size: 18px;\n            }\n            \n            .color {\n                width: 40px;\n                height: 40px;\n            }\n            \n            .clear {\n                font-size: 20px;\n                cursor: pointer;\n            }\n        ";
+      document.querySelector('head').append(style);
+    }
+  }, {
+    key: "reset",
+    value: function reset() {
+      localStorage.clear();
+      this.scale = 1;
+      this.color = '#ffffff';
+      this.setBgColor();
+      this.onScaleChange();
     }
   }, {
     key: "render",
     value: function render() {
+      this.injectStyle();
+      this.setBgColor();
+      this.onScaleChange();
       var scaleInputS = document.createElement('input'),
           scaleInputM = document.createElement('input'),
           panel = document.createElement('div');
-      panel.append(this.btnBlock, this.colorPicker);
+      panel.append(this.btnBlock, this.colorPicker, this.clear);
+      this.clear.innerHTML = '&#10006;';
+      this.clear.classList.add('clear');
       scaleInputS.classList.add('scale_btn');
       scaleInputM.classList.add('scale_btn');
       this.btnBlock.classList.add('scale');
